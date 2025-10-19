@@ -1,0 +1,100 @@
+#include <LedControl.h>   // Library for MAX7219 dot matrix
+
+// MAX7219 pins
+#define DIN 12
+#define CLK 11
+#define CS 10
+
+LedControl lc = LedControl(DIN, CLK, CS, 1);  // 1 device
+
+// IR sensor pins
+#define IR1 2
+#define IR2 3
+
+// Distance between sensors in cm
+const float distance = 5.0;  
+
+// Threshold speed in cm/s (adjustable for hand test)
+const float thresholdSpeed = 30.0;  
+
+unsigned long startTime = 0;
+bool firstTriggered = false;
+
+// Tick symbol
+byte tick[8] = {
+  B00000000,
+  B00000010,
+  B00000110,
+  B00001100,
+  B10011000,
+  B11110000,
+  B01100000,
+  B00000000
+};
+
+//cross symbol
+byte cross[8] = {
+  B10000001,
+  B01000010,
+  B00100100,
+  B00011000,
+  B00011000,
+  B00100100,
+  B01000010,
+  B10000001
+};
+
+void setup() {
+  pinMode(IR1, INPUT);
+  pinMode(IR2, INPUT);
+
+  lc.shutdown(0, false);   // Wake up display
+  lc.setIntensity(0, 8);   // Brightness
+  lc.clearDisplay(0);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  int ir1State = digitalRead(IR1);
+  int ir2State = digitalRead(IR2);
+
+  // First sensor triggered
+  if (ir1State == LOW && !firstTriggered) {
+    startTime = millis();
+    firstTriggered = true;
+    Serial.println("First sensor triggered!");
+  }
+
+  // Second sensor triggered
+  if (ir2State == LOW && firstTriggered) {
+    unsigned long endTime = millis();
+    float timeTaken = (endTime - startTime) / 1000.0; // in seconds
+    float speed = distance / timeTaken;               // cm/s
+
+    Serial.print("Time taken: ");
+    Serial.print(timeTaken);
+    Serial.print(" s, Speed: ");
+    Serial.print(speed);
+    Serial.println(" cm/s");
+
+    lc.clearDisplay(0);
+
+    if (speed > thresholdSpeed) {
+      showSymbol(cross);   // Too fast
+    } else {
+      showSymbol(tick);    // OK
+    }
+
+    delay(2000);           // Hold symbol for 2s
+    lc.clearDisplay(0);
+
+    firstTriggered = false; // Reset for next measurement
+  }
+}
+
+void showSymbol(byte symbol[8]) {
+  for (int i = 0; i < 8; i++) {
+    lc.setRow(0, i, symbol[i]);
+  }
+}
