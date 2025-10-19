@@ -1,0 +1,4 @@
+This is a program for a speed limit alert device. It uses an Arduino UNO, 2 IR sensors and an 8x8 OLED dot matrix display.
+The 2 IR sensors are programmed in such a way that, the time taken by the second IR sensor is recorded and the speed is calculated accordingly.
+A speed limit is set accordingly. If the calculated speed is greater than the limit, the display is programmed to indicate a cross.
+If the calculated speed is lesser than the limit, the display is programmed to indicate a tick symbol.
